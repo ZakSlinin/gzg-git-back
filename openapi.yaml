@@ -1,0 +1,301 @@
+openapi: 3.1.0
+info:
+  title: GZG Git API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      required: [id, username, email, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: "^[a-zA-Z0-9_-]+$"
+          description: User display name (unique)
+          example: "timur_dev"
+        email:
+          type: string
+          format: email
+          description: User email
+          example: "timur@example.com"
+        fullname:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: User full name
+          example: "Timur Khalilov"
+        bio:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: User bio
+          example: "1C developer, Go enthusiast"
+        public_repos_count:
+          type: integer
+          default: 0
+          description: Count of public repositories
+        created_at:
+          type: string
+          format: date-time
+          description: User creation date
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: User last update date
+          example: "2024-01-15T10:30:00Z"
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT token for authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Username already exists"
+        timestamp:
+          type: string
+          format: date-time
+
+paths:
+  /api/ping:
+    get:
+      summary: Check API status
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  version:
+                    type: string
+                    example: "0.1.0"
+
+  /api/auth/register:
+    post:
+      summary: Register new user in the system
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, fullname]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 32
+                  pattern: "^[a-zA-Z0-9_-]+$"
+                  description: Display username
+                  example: "timur_dev"
+                email:
+                  type: string
+                  format: email
+                  description: User email
+                  example: "timur@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: User password (8 - min)
+                  example: "SecurePass123!"
+                fullname:
+                  type: string
+                  maxLength: 100
+                  description: User full name
+                  example: "Timur"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Username or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      summary: Login user in the system
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email
+                  example: "timur@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                  example: "SecurePass123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/user:
+    get:
+      summary: Get current user profile
+      tags:
+        - User
+      security:
+        - BearerToken: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/User'
+                  - type: object
+                    properties:
+                      total_repos_count:
+                        type: integer
+                        description: Total repositories count (only for current user)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      summary: Update current user profile
+      tags:
+        - User
+      security:
+        - BearerToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullname:
+                  type: string
+                  maxLength: 100
+                bio:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/users/{username}:
+    get:
+      summary: Get public user profile
+      tags:
+        - User
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "timur_dev"
+      responses:
+        '200':
+          description: User public profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
