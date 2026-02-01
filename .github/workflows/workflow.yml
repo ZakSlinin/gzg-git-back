@@ -1,0 +1,11 @@
+name: workflow.yml
+on:
+  push:
+    branches: [main]
+jobs:
+  backend-tests:
+    name: Backend test (Golang)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo "Hello, GitHub Actions!"
