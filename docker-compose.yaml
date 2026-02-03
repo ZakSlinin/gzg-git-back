@@ -1,4 +1,49 @@
+version: '3.9'
+
 services:
+  # Основая БД (под разработку)
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: gzg_dev
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5430:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dev_user -d gzg_dev" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gzg_network
+  postgres-test:
+    image: postgres:latest
+    container_name: gzg_postgres_test
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: gzg_test
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U test_user -d gzg_test" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+        - gzg_network
+    profiles:
+      - test
   swagger-ui:
     image: swaggerapi/swagger-ui
     container_name: gzg_git_swagger_ui
@@ -8,3 +53,12 @@ services:
       - ./openapi.yaml:/usr/share/nginx/html/openapi.yaml
     environment:
       API_URL: openapi.yaml
+volumes:
+  postgres_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+
+networks:
+  gzg_network:
+    driver: bridge
