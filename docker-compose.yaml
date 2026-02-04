@@ -30,10 +30,9 @@ services:
       POSTGRES_PASSWORD: test_password
       POSTGRES_DB: gzg_test
       PGDATA: /var/lib/postgresql/data
+      TEST_DB_URL: postgres://test_user:test_password@localhost:5433/gzg_test?sslmode=disable
     ports:
-      - "5432:5432"
-    volumes:
-      - ./pgdata:/var/lib/postgresql/data/pgdata
+      - "5433:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U test_user -d gzg_test" ]
       interval: 10s
