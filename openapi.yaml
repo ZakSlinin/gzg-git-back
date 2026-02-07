@@ -3,7 +3,7 @@ info:
   title: GZG Git API
   version: 0.1.0
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8081
     description: Development server
 
 components:
@@ -35,12 +35,16 @@ components:
           format: email
           description: User email
           example: "timur@example.com"
+        Password:
+          type: string
+          format: password
+          description: User hash password
         fullname:
           type: string
           maxLength: 100
           nullable: true
           description: User full name
-          example: "Timur Khalilov"
+          example: "Timur"
         bio:
           type: string
           maxLength: 500
