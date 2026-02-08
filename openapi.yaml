@@ -51,6 +51,9 @@ components:
           nullable: true
           description: User bio
           example: "1C developer, Go enthusiast"
+        avatar_url:
+          type: string
+          description: url to user avatar
         public_repos_count:
           type: integer
           default: 0

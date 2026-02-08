@@ -8,12 +8,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthRepository struct {
+type PostgresAuthRepository struct {
 	db *sql.DB
 }
 
-func NewAuthRepository(db *sql.DB) *AuthRepository {
-	return &AuthRepository{db: db}
+func NewAuthRepository(db *sql.DB) *PostgresAuthRepository {
+	return &PostgresAuthRepository{db: db}
+}
+
+type AuthRepository interface {
+	CreateUser(ctx context.Context, username, email, password, fullname string) (*model.User, error)
+	LoginUser(ctx context.Context, email, password string) (*model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
 func CreateUser(db *sql.DB, ctx context.Context, username, email, password, fullname string) error {
@@ -48,4 +54,30 @@ func LoginUser(db *sql.DB, ctx context.Context, email, password string) (*model.
 	}
 
 	return &user, nil
+}
+
+func GetUserByEmail(db *sql.DB, ctx context.Context, email string) (*model.User, error) {
+	query := `SELECT id, username, email, fullanme, bio, avatar_url, public_repos_count, created_at, updated_at  FROM users WHERE email = $1`
+
+	u := &model.User{}
+
+	row := db.QueryRowContext(ctx, query, email)
+
+	err := row.Scan(
+		&u.ID,
+		&u.Username,
+		&u.Email,
+		&u.FullName,
+		&u.Bio,
+		&u.AvatarURL,
+		&u.PublicReposCount,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	return u, nil
 }
