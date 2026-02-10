@@ -77,7 +77,7 @@ func (repo *PostgresAuthRepository) LoginUser(db *sql.DB, ctx context.Context, e
 }
 
 func (repo *PostgresAuthRepository) GetUserByEmail(db *sql.DB, ctx context.Context, email string) (*model.User, error) {
-	query := `SELECT id, username, email, fullanme, bio, avatar_url, public_repos_count, created_at, updated_at  FROM users WHERE email = $1`
+	query := `SELECT id, username, email, fullname, bio, avatar_url, public_repos_count, created_at, updated_at  FROM users WHERE email = $1`
 
 	u := &model.User{}
 

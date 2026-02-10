@@ -69,8 +69,9 @@ func (m *JWTManager) GenerateToken(userID, username, email string) (string, erro
 }
 
 var (
-	ErrEmailAlreadyExist = errors.New("email is already exists")
-	ErrNoJwtSecret       = errors.New("jwt secret not set")
+	ErrEmailAlreadyExist    = errors.New("email is already exists")
+	ErrNoJwtSecret          = errors.New("jwt secret not set")
+	ErrUsernameAlreadyExist = errors.New("username is already exists")
 )
 
 type AuthService struct {
@@ -87,6 +88,9 @@ func (authService *AuthService) CreateUser(ctx context.Context, username, email,
 		return nil, err
 	}
 	if receivedUser != nil {
+		if receivedUser.Username == username {
+			return nil, ErrUsernameAlreadyExist
+		}
 		return nil, ErrEmailAlreadyExist
 	}
 
