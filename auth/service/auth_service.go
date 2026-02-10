@@ -72,6 +72,7 @@ var (
 	ErrEmailAlreadyExist    = errors.New("email is already exists")
 	ErrNoJwtSecret          = errors.New("jwt secret not set")
 	ErrUsernameAlreadyExist = errors.New("username is already exists")
+	ErrUserNotFound         = errors.New("user not found")
 )
 
 type AuthService struct {
@@ -122,6 +123,50 @@ func (authService *AuthService) CreateUser(ctx context.Context, username, email,
 	}
 
 	token, err := jwtManager.GenerateToken(createdUser.ID.String(), username, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	resp := &model.RegisterResponse{
+		User:        *userDTO,
+		AccessToken: token,
+	}
+
+	return resp, nil
+}
+
+func (authService *AuthService) Login(ctx context.Context, email, password string) (*model.RegisterResponse, error) {
+	loginUser, err := authService.authUser.LoginUser(ctx, email, password)
+	if err != nil {
+		return nil, err
+	}
+
+	if loginUser == nil {
+		return nil, ErrUserNotFound
+	}
+
+	userDTO := &model.UserDTO{
+		ID:               loginUser.ID,
+		Username:         loginUser.Username,
+		Email:            loginUser.Email,
+		FullName:         loginUser.FullName,
+		Bio:              loginUser.Bio,
+		AvatarURL:        loginUser.AvatarURL,
+		PublicReposCount: loginUser.PublicReposCount,
+		CreatedAt:        loginUser.CreatedAt,
+		UpdatedAt:        loginUser.UpdatedAt,
+	}
+
+	jwtManager, err := NewJWTManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWT manager: %w", err)
+	}
+
+	token, err := jwtManager.GenerateToken(
+		loginUser.ID.String(),
+		loginUser.Username,
+		loginUser.Email,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}

@@ -54,23 +54,40 @@ func (repo *PostgresAuthRepository) CreateUser(db *sql.DB, ctx context.Context, 
 	return nil
 }
 
-func (repo *PostgresAuthRepository) LoginUser(db *sql.DB, ctx context.Context, email, password string) (*model.User, error) {
-	query := `SELECT * FROM users WHERE email = $1`
+func (repo *PostgresAuthRepository) LoginUser(
+	ctx context.Context,
+	email, password string,
+) (*model.User, error) {
+
+	query := `SELECT id, email, fullname, password_hash FROM users WHERE email = $1`
 
 	var user model.User
 	var passwordHash string
 
-	err := repo.db.QueryRowContext(ctx, query, email).Scan(&passwordHash)
+	err := repo.db.QueryRowContext(ctx, query, email).
+		Scan(
+			&user.ID,
+			&user.Email,
+			&user.FullName,
+			&passwordHash,
+		)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("Invalid credentials")
+			return nil, errors.New("invalid credentials")
 		}
 		return nil, err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
-		return nil, errors.New("Invalid credentials")
+		return nil, errors.New("invalid credentials")
+	}
+
+	updateQuery := `UPDATE users SET updated_at = $1 WHERE id = $2`
+
+	_, err = repo.db.ExecContext(ctx, updateQuery, time.Now(), user.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return &user, nil
