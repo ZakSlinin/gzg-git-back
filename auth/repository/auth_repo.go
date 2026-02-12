@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/ZakSlinin/gzg-git-back/model"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -24,7 +23,7 @@ type AuthRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
-func (repo *PostgresAuthRepository) CreateUser(db *sql.DB, ctx context.Context, username, email, password, fullname string) error {
+func (repo *PostgresAuthRepository) CreateUser(ctx context.Context, username, email, password, fullname string) error {
 	id := uuid.New()
 	now := time.Now()
 
@@ -54,47 +53,8 @@ func (repo *PostgresAuthRepository) CreateUser(db *sql.DB, ctx context.Context, 
 	return nil
 }
 
-func (repo *PostgresAuthRepository) LoginUser(
-	ctx context.Context,
-	email, password string,
-) (*model.User, error) {
-
-	query := `SELECT id, email, fullname, password_hash FROM users WHERE email = $1`
-
-	var user model.User
-	var passwordHash string
-
-	err := repo.db.QueryRowContext(ctx, query, email).
-		Scan(
-			&user.ID,
-			&user.Email,
-			&user.FullName,
-			&passwordHash,
-		)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("invalid credentials")
-		}
-		return nil, err
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
-		return nil, errors.New("invalid credentials")
-	}
-
-	updateQuery := `UPDATE users SET updated_at = $1 WHERE id = $2`
-
-	_, err = repo.db.ExecContext(ctx, updateQuery, time.Now(), user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &user, nil
-}
-
-func (repo *PostgresAuthRepository) GetUserByEmail(db *sql.DB, ctx context.Context, email string) (*model.User, error) {
-	query := `SELECT id, username, email, fullname, bio, avatar_url, public_repos_count, created_at, updated_at  FROM users WHERE email = $1`
+func (repo *PostgresAuthRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	query := `SELECT id, username, email, password, fullname, bio, avatar_url, public_repos_count, created_at, updated_at  FROM users WHERE email = $1`
 
 	u := &model.User{}
 
@@ -104,6 +64,7 @@ func (repo *PostgresAuthRepository) GetUserByEmail(db *sql.DB, ctx context.Conte
 		&u.ID,
 		&u.Username,
 		&u.Email,
+		&u.Password,
 		&u.FullName,
 		&u.Bio,
 		&u.AvatarURL,
@@ -112,7 +73,10 @@ func (repo *PostgresAuthRepository) GetUserByEmail(db *sql.DB, ctx context.Conte
 		&u.UpdatedAt,
 	)
 
-	if errors.Is(err, sql.ErrNoRows) {
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

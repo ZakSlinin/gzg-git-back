@@ -76,14 +76,15 @@ var (
 )
 
 type AuthService struct {
-	authUser repository.AuthRepository
+	authUser   repository.AuthRepository
+	jwtManager *JWTManager
 }
 
-func NewAuthService(authUser repository.AuthRepository) *AuthService {
-	return &AuthService{authUser: authUser}
+func NewAuthService(authUser repository.AuthRepository, jwt *JWTManager) *AuthService {
+	return &AuthService{authUser: authUser, jwtManager: jwt}
 }
 
-func (authService *AuthService) CreateUser(ctx context.Context, username, email, password, fullname string, bio, avatarUrl, createdAt *string) (*model.RegisterResponse, error) {
+func (authService *AuthService) CreateUser(ctx context.Context, username, email, password, fullname string) (*model.RegisterResponse, error) {
 	receivedUser, err := authService.authUser.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -117,12 +118,7 @@ func (authService *AuthService) CreateUser(ctx context.Context, username, email,
 		UpdatedAt:        createdUser.UpdatedAt,
 	}
 
-	jwtManager, err := NewJWTManager()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create JWT manager: %w", err)
-	}
-
-	token, err := jwtManager.GenerateToken(createdUser.ID.String(), username, email)
+	token, err := authService.jwtManager.GenerateToken(createdUser.ID.String(), username, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -136,13 +132,13 @@ func (authService *AuthService) CreateUser(ctx context.Context, username, email,
 }
 
 func (authService *AuthService) Login(ctx context.Context, email, password string) (*model.RegisterResponse, error) {
-	loginUser, err := authService.authUser.LoginUser(ctx, email, password)
-	if err != nil {
-		return nil, err
+	loginUser, err := authService.authUser.GetUserByEmail(ctx, email)
+	if err != nil || loginUser == nil {
+		return nil, ErrUserNotFound
 	}
 
-	if loginUser == nil {
-		return nil, ErrUserNotFound
+	if err := bcrypt.CompareHashAndPassword([]byte(loginUser.Password), []byte(password)); err != nil {
+		return nil, errors.New("invalid credentials")
 	}
 
 	userDTO := &model.UserDTO{
@@ -157,12 +153,7 @@ func (authService *AuthService) Login(ctx context.Context, email, password strin
 		UpdatedAt:        loginUser.UpdatedAt,
 	}
 
-	jwtManager, err := NewJWTManager()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create JWT manager: %w", err)
-	}
-
-	token, err := jwtManager.GenerateToken(
+	token, err := authService.jwtManager.GenerateToken(
 		loginUser.ID.String(),
 		loginUser.Username,
 		loginUser.Email,
