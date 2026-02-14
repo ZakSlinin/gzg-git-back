@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/ZakSlinin/gzg-git-back/service"
+	"github.com/ZakSlinin/gzg-git-back/auth/service"
 	"github.com/gin-gonic/gin"
 	"mime/multipart"
 	"net/http"
@@ -12,8 +12,8 @@ type AuthHandler struct {
 	fileService *service.FileService
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *service.AuthService, fileService *service.FileService) *AuthHandler {
+	return &AuthHandler{authService: authService, fileService: fileService}
 }
 
 type ErrorResponse struct {

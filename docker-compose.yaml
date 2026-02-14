@@ -2,25 +2,44 @@ version: '3.9'
 
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:15-alpine
     container_name: postgres_container
     environment:
       POSTGRES_USER: dev_user
       POSTGRES_PASSWORD: dev_password
       POSTGRES_DB: gzg_dev
-      PGDATA: /var/lib/postgresql/data
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5430:5432"
     volumes:
-      - ./pgdata:/var/lib/postgresql/data/pgdata
+      - postgres_data:/var/lib/postgresql/data/pgdata
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U dev_user -d gzg_dev" ]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
-    restart: unless-stopped
     networks:
       - gzg_network
+
+  auth-service:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: auth_service
+    ports:
+      - "8081:8080"
+    environment:
+      - DATABASE_URL=postgres://dev_user:dev_password@postgres:5432/gzg_dev?sslmode=disable
+      - JWT_SECRET=L9f6Q2XJe4ecvh2LYjP0KioZw1a9MBx8biROVg4tGLx
+      - JWT_EXPIRE_TIME=24h
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./auth/uploads:/root/uploads
+    networks:
+      - gzg_network
+
   swagger-ui:
     image: swaggerapi/swagger-ui
     container_name: gzg_git_swagger_ui
@@ -30,11 +49,11 @@ services:
       - ./openapi.yaml:/usr/share/nginx/html/openapi.yaml
     environment:
       API_URL: openapi.yaml
+    networks:
+      - gzg_network
+
 volumes:
-  postgres_data:
-    driver: local
-  postgres_test_data:
-    driver: local
+  postgres_data: 
 
 networks:
   gzg_network:
