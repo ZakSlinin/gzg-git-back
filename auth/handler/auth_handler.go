@@ -3,11 +3,13 @@ package handler
 import (
 	"github.com/ZakSlinin/gzg-git-back/service"
 	"github.com/gin-gonic/gin"
+	"mime/multipart"
 	"net/http"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
+	fileService *service.FileService
 }
 
 func NewAuthHandler(authService *service.AuthService) *AuthHandler {
@@ -25,11 +27,11 @@ type LoginRequest struct {
 }
 
 type CreateUserRequest struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	FullName  string `json:"fullname"`
-	AvatarUrl string `json:"avatar_url"`
+	Username  string                `json:"username"`
+	Email     string                `json:"email"`
+	Password  string                `json:"password"`
+	FullName  string                `json:"fullname"`
+	AvatarUrl *multipart.FileHeader `json:"avatar_url"`
 }
 
 func (h *AuthHandler) CreateUser(c *gin.Context) {
@@ -39,7 +41,20 @@ func (h *AuthHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.authService.CreateUser(c.Request.Context(), req.Username, req.Email, req.Password, req.FullName, req.AvatarUrl)
+	var avatarUrlToUse string
+	if req.AvatarUrl != nil {
+		file, _ := req.AvatarUrl.Open()
+		defer file.Close()
+
+		path, err := h.fileService.SaveAvatar(file, req.AvatarUrl.Filename)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{500, "failed to save file"})
+			return
+		}
+		avatarUrlToUse = path
+	}
+
+	resp, err := h.authService.CreateUser(c.Request.Context(), req.Username, req.Email, req.Password, req.FullName, avatarUrlToUse)
 	if err != nil {
 		if err == service.ErrEmailAlreadyExist {
 			c.JSON(http.StatusBadRequest, ErrorResponse{400, "email already exists"})
