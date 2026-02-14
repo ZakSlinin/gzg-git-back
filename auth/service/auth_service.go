@@ -84,7 +84,7 @@ func NewAuthService(authUser repository.AuthRepository, jwt *JWTManager) *AuthSe
 	return &AuthService{authUser: authUser, jwtManager: jwt}
 }
 
-func (authService *AuthService) CreateUser(ctx context.Context, username, email, password, fullname string) (*model.RegisterResponse, error) {
+func (authService *AuthService) CreateUser(ctx context.Context, username, email, password, fullname, avatarUrl string) (*model.RegisterResponse, error) {
 	receivedUser, err := authService.authUser.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (authService *AuthService) CreateUser(ctx context.Context, username, email,
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	createdUser, err := authService.authUser.CreateUser(ctx, username, email, string(hash), fullname)
+	createdUser, err := authService.authUser.CreateUser(ctx, username, email, string(hash), fullname, avatarUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}

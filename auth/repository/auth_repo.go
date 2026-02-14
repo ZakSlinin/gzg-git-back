@@ -18,23 +18,23 @@ func NewAuthRepository(db *sql.DB) *PostgresAuthRepository {
 }
 
 type AuthRepository interface {
-	CreateUser(ctx context.Context, username, email, password, fullname string) (*model.User, error)
+	CreateUser(ctx context.Context, username, email, password, fullname, avatarUrl string) (*model.User, error)
 	LoginUser(ctx context.Context, email, password string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
-func (repo *PostgresAuthRepository) CreateUser(ctx context.Context, username, email, password, fullname string) error {
+func (repo *PostgresAuthRepository) CreateUser(ctx context.Context, username, email, password, fullname, avatarUrl string) (*model.User, error) {
 	id := uuid.New()
 	now := time.Now()
 
-	query := `INSERT INTO users (id, username, email, password, fullname, created_at) 
+	query := `INSERT INTO users (id, username, email, password, fullname, avatarUrl, created_at) 
 			  VALUES ($1, $2, $3, $4, $5, $6) 
 			  RETURNING id, username, email, fullname, bio, avatar_url, public_repos_count, created_at, updated_at`
 
 	u := &model.User{}
 
 	err := repo.db.QueryRowContext(ctx, query,
-		id, username, email, password, fullname, now).Scan(
+		id, username, email, password, fullname, avatarUrl, now).Scan(
 		&u.ID,
 		&u.Username,
 		&u.Email,
@@ -47,10 +47,10 @@ func (repo *PostgresAuthRepository) CreateUser(ctx context.Context, username, em
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return u, nil
 }
 
 func (repo *PostgresAuthRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
