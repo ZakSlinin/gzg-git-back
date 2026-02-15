@@ -23,7 +23,7 @@ services:
 
   auth-service:
     build:
-      context: ./auth
+      context: ./internal/auth
       dockerfile: Dockerfile
     container_name: auth_service
     ports:
@@ -34,7 +34,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./auth/uploads:/app/uploads
+      - ./uploads:/shared/uploads
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U dev_user -d gzg_dev" ]
       interval: 5s

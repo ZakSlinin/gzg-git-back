@@ -21,53 +21,24 @@ components:
         id:
           type: string
           format: uuid
-          description: Unique user identifier
           example: "550e8400-e29b-41d4-a716-446655440000"
         username:
           type: string
-          minLength: 3
-          maxLength: 32
-          pattern: "^[a-zA-Z0-9_-]+$"
-          description: User display name (unique)
           example: "timur_dev"
         email:
           type: string
           format: email
-          description: User email
           example: "timur@example.com"
-        Password:
-          type: string
-          format: password
-          description: User hash password
         fullname:
           type: string
-          maxLength: 100
           nullable: true
-          description: User full name
           example: "Timur"
-        bio:
-          type: string
-          maxLength: 500
-          nullable: true
-          description: User bio
-          example: "1C developer, Go enthusiast"
         avatar_url:
           type: string
-          description: url to user avatar
-        public_repos_count:
-          type: integer
-          default: 0
-          description: Count of public repositories
+          description: URL to user avatar
         created_at:
           type: string
           format: date-time
-          description: User creation date
-          example: "2024-01-15T10:30:00Z"
-        updated_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: User last update date
           example: "2024-01-15T10:30:00Z"
 
     AuthResponse:
@@ -96,38 +67,18 @@ components:
           format: date-time
 
 paths:
-  /api/ping:
-    get:
-      summary: Check API status
-      tags:
-        - Health
-      responses:
-        '200':
-          description: API is healthy
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "OK"
-                  version:
-                    type: string
-                    example: "0.1.0"
-
   /api/auth/register:
     post:
-      summary: Register new user in the system
+      summary: Register new user with avatar
       tags:
         - Auth
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
-              required: [username, email, password, fullname]
+              required: [username, email, password, fullname, avatar]
               properties:
                 username:
                   type: string
@@ -145,13 +96,17 @@ paths:
                   type: string
                   format: password
                   minLength: 8
-                  description: User password (8 - min)
+                  description: User password
                   example: "SecurePass123!"
                 fullname:
                   type: string
                   maxLength: 100
                   description: User full name
                   example: "Timur"
+                avatar:
+                  type: string
+                  format: binary
+                  description: User avatar file
       responses:
         '201':
           description: User created successfully
@@ -172,137 +127,3 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /api/auth/login:
-    post:
-      summary: Login user in the system
-      tags:
-        - Auth
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  description: User email
-                  example: "timur@example.com"
-                password:
-                  type: string
-                  format: password
-                  description: User password
-                  example: "SecurePass123!"
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          description: Invalid input data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Invalid email or password
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/user:
-    get:
-      summary: Get current user profile
-      tags:
-        - User
-      security:
-        - BearerToken: []
-      responses:
-        '200':
-          description: Current user profile
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/User'
-                  - type: object
-                    properties:
-                      total_repos_count:
-                        type: integer
-                        description: Total repositories count (only for current user)
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    patch:
-      summary: Update current user profile
-      tags:
-        - User
-      security:
-        - BearerToken: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                fullname:
-                  type: string
-                  maxLength: 100
-                bio:
-                  type: string
-                  maxLength: 500
-      responses:
-        '200':
-          description: Profile updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid input data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/users/{username}:
-    get:
-      summary: Get public user profile
-      tags:
-        - User
-      parameters:
-        - name: username
-          in: path
-          required: true
-          schema:
-            type: string
-          example: "timur_dev"
-      responses:
-        '200':
-          description: User public profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'

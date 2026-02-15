@@ -14,11 +14,15 @@ import (
 )
 
 func main() {
+	if err := os.MkdirAll("/shared/uploads/avatar", 0755); err != nil {
+		log.Fatal("failed to create uploads directory:", err)
+	}
+
 	r := gin.Default()
 
 	// CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8081", "http://localhost:8082"},
+		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:8081", "http://localhost:8082"},
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -39,6 +43,9 @@ func main() {
 
 	//JWT
 	jwtManager, err := service.NewJWTManager()
+	if err != nil {
+		log.Fatal("failed to init JWT manager:", err)
+	}
 
 	// Auth
 	authRepo := repository.NewAuthRepository(db)
@@ -50,4 +57,6 @@ func main() {
 		apiAuth.POST("/login", authHandler.Login)
 		apiAuth.POST("/register", authHandler.CreateUser)
 	}
+
+	r.Run(":8080")
 }

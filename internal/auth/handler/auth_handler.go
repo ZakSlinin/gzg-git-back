@@ -35,19 +35,17 @@ type CreateUserRequest struct {
 }
 
 func (h *AuthHandler) CreateUser(c *gin.Context) {
-	var req CreateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{400, "invalid request body"})
-		return
-	}
+	username := c.PostForm("username")
+	email := c.PostForm("email")
+	password := c.PostForm("password")
+	fullName := c.PostForm("fullname")
 
 	avatarUrl, err := h.UploadAvatar(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{500, "failed to upload avatar"})
 		return
 	}
 
-	resp, err := h.authService.CreateUser(c.Request.Context(), req.Username, req.Email, req.Password, req.FullName, avatarUrl)
+	resp, err := h.authService.CreateUser(c.Request.Context(), username, email, password, fullName, avatarUrl)
 	if err != nil {
 		if err == service.ErrEmailAlreadyExist {
 			c.JSON(http.StatusBadRequest, ErrorResponse{400, "email already exists"})
@@ -75,7 +73,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusCreated, resp)
 }
 
 func (h *AuthHandler) UploadAvatar(c *gin.Context) (string, error) {
@@ -92,12 +90,11 @@ func (h *AuthHandler) UploadAvatar(c *gin.Context) (string, error) {
 
 	filename := uuid.New().String() + filepath.Ext(file.Filename)
 
-	err = c.SaveUploadedFile(file, "uploads/avatar/"+filename)
+	err = c.SaveUploadedFile(file, "/shared/uploads/avatar/"+filename)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{400, "failed to save file"})
 		return "", err
 	}
 
-	c.JSON(http.StatusOK, gin.H{"filename": filename})
 	return filename, nil
 }
