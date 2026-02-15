@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/ZakSlinin/gzg-git-back/service"
+	"github.com/ZakSlinin/gzg-git-back/internal/auth/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ZakSlinin/gzg-git-back/model"
-	"github.com/ZakSlinin/gzg-git-back/repository"
+	"github.com/ZakSlinin/gzg-git-back/internal/auth/model"
+	"github.com/ZakSlinin/gzg-git-back/internal/auth/repository"
+
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"os"

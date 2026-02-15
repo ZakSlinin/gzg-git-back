@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/ZakSlinin/gzg-git-back/model"
+	"github.com/ZakSlinin/gzg-git-back/internal/auth/model"
 	"github.com/google/uuid"
 	"time"
 )

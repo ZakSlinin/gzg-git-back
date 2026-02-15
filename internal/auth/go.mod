@@ -1,4 +1,4 @@
-module github.com/ZakSlinin/gzg-git-back
+module github.com/ZakSlinin/gzg-git-back/internal/auth
 
 go 1.25.0
 
