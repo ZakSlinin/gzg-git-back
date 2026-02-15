@@ -19,7 +19,6 @@ func NewAuthRepository(db *sql.DB) *PostgresAuthRepository {
 
 type AuthRepository interface {
 	CreateUser(ctx context.Context, username, email, password, fullname, avatarUrl string) (*model.User, error)
-	LoginUser(ctx context.Context, email, password string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
