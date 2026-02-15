@@ -40,13 +40,12 @@ func (h *AuthHandler) CreateUser(c *gin.Context) {
 	password := c.PostForm("password")
 	fullName := c.PostForm("fullname")
 
-	avatarUrl, err := h.UploadAvatar(c)
-	if err != nil {
+	if username == "" || email == "" || password == "" || fullName == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{400, "all fields are required"})
 		return
 	}
 
-	resp, err := h.authService.CreateUser(c.Request.Context(), username, email, password, fullName, avatarUrl)
-	if err != nil {
+	if err := h.authService.CheckUserExists(c.Request.Context(), username, email); err != nil {
 		if err == service.ErrEmailAlreadyExist {
 			c.JSON(http.StatusBadRequest, ErrorResponse{400, "email already exists"})
 			return
@@ -55,7 +54,21 @@ func (h *AuthHandler) CreateUser(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, ErrorResponse{400, "username already exists"})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{500, "internal server error"})
+		return
 	}
+
+	avatarUrl, err := h.UploadAvatar(c)
+	if err != nil {
+		return
+	}
+
+	resp, err := h.authService.CreateUser(c.Request.Context(), username, email, password, fullName, avatarUrl)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{500, "internal server error"})
+		return
+	}
+
 	c.JSON(http.StatusOK, resp)
 }
 

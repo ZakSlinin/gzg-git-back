@@ -86,17 +86,6 @@ func NewAuthService(authUser repository.AuthRepository, jwt *JWTManager) *AuthSe
 }
 
 func (authService *AuthService) CreateUser(ctx context.Context, username, email, password, fullname, avatarUrl string) (*model.RegisterResponse, error) {
-	receivedUser, err := authService.authUser.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, err
-	}
-	if receivedUser != nil {
-		if receivedUser.Username == username {
-			return nil, ErrUsernameAlreadyExist
-		}
-		return nil, ErrEmailAlreadyExist
-	}
-
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -169,4 +158,18 @@ func (authService *AuthService) Login(ctx context.Context, email, password strin
 	}
 
 	return resp, nil
+}
+
+func (authService *AuthService) CheckUserExists(ctx context.Context, username, email string) error {
+	receivedUser, err := authService.authUser.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	if receivedUser != nil {
+		if receivedUser.Username == username {
+			return ErrUsernameAlreadyExist
+		}
+		return ErrEmailAlreadyExist
+	}
+	return nil
 }

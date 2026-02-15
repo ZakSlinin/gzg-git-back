@@ -26,9 +26,9 @@ func (repo *PostgresAuthRepository) CreateUser(ctx context.Context, username, em
 	id := uuid.New()
 	now := time.Now()
 
-	query := `INSERT INTO users (id, username, email, password, fullname, avatarUrl, created_at) 
-			  VALUES ($1, $2, $3, $4, $5, $6) 
-			  RETURNING id, username, email, fullname, bio, avatar_url, public_repos_count, created_at, updated_at`
+	query := `INSERT INTO users (id, username, email, password, fullname, avatar_url, created_at) 
+              VALUES ($1, $2, $3, $4, $5, $6, $7) 
+              RETURNING id, username, email, fullname, bio, avatar_url, public_repos_count, created_at, updated_at`
 
 	u := &model.User{}
 
