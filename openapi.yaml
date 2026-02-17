@@ -65,6 +65,32 @@ components:
         timestamp:
           type: string
           format: date-time
+    ErrorUserNotFound:
+      type: object
+      required: [ error, message ]
+      properties:
+        error:
+          type: string
+          example: "USER_NOT_FOUND"
+        message:
+          type: string
+          example: "User not found"
+        timestamp:
+          type: string
+          format: date-time
+    ErrorInvalidCredentialForSearchUser:
+      type: object
+      required: [ error, message ]
+      properties:
+        error:
+          type: string
+          example: "INVALID_CREDENTIAL"
+        message:
+          type: string
+          example: "Invalid credential"
+        timestamp:
+          type: string
+          format: date-time
 
 paths:
   /api/auth/register:
@@ -167,3 +193,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/auth/user:
+    get:
+      summary: Get user
+      tags:
+        - User
+      parameters:
+        - username: username
+          in: query
+          required: true
+          description: Username
+          schema:
+            type: string
+            example: zaksln
+      responses:
+        '200':
+          description: Get successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInvalidCredentialForSearchUser'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUserNotFound'
